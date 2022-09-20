@@ -1,6 +1,3 @@
-// OS COMENTÁRIOS RESERVAM UMA SOLUÇÃO PARA OBTER RSSIS E CALCULAR A MODA,
-// NO ENTANTO ESTOU TENDO ERRO DE ESTOURO DE PILHA DE MEMÓRIA
-
 #include <BLEDevice.h>
 #include <LinkedList.h>
 
@@ -12,13 +9,14 @@
 
 int totalScan;
 BLEScan* scanner;
-struct Dispositivo {
-  int Id;
-  //LinkedList<int> Rssis;
-  int Moda;
-  float Distancia;
+class Dispositivo {
+  public:
+    int Id;
+    LinkedList<int> Rssis;
+    int Moda;
+    float Distancia;
 };
-LinkedList<Dispositivo> dispositivos = LinkedList<Dispositivo>();
+LinkedList<Dispositivo*> dispositivos = LinkedList<Dispositivo*>();
 std::__cxx11::string iTags[QUANTIDADE_ITAGS] = {
   "fc:58:fa:b4:60:96",
   "fc:58:fa:b4:64:2b",
@@ -78,27 +76,27 @@ void atualizarLista(BLEScanResults dispositivosEncontrados)
         // DISPOSITIVO É UM ITAG
         
         int numeroItag = j + 1;
-        Dispositivo existente;
+        Dispositivo *existente;
         bool existe = false;
         
         for(int k = 0; k < dispositivos.size(); k++) {
           existente = dispositivos.get(k);
-          if (numeroItag == existente.Id) {
+          if (numeroItag == existente->Id) {
             existe = true;
-            //LinkedList<int> listaAntiga = existente.Rssis;
-            //Dispositivo atualizaElemento = {numeroItag, listaAntiga};
-            Dispositivo atualizaElemento = {numeroItag, dispositivo.getRSSI()};
-            //atualizaElemento.Rssis.add(dispositivo.getRSSI());
+            Dispositivo *atualizaElemento = new Dispositivo();
+              atualizaElemento->Id = numeroItag;       
+              atualizaElemento->Rssis = existente->Rssis;            
+              atualizaElemento->Rssis.add(dispositivo.getRSSI());
             dispositivos.set(k, atualizaElemento);
             break;
           }
         }
         
         if (!existe) {
-          //LinkedList<int> novaLista = LinkedList<int>();
-          //Dispositivo novoElemento = {numeroItag, novaLista};
-          Dispositivo novoElemento = {numeroItag, dispositivo.getRSSI()};
-          //novoElemento.Rssis.add(dispositivo.getRSSI());
+          Dispositivo *novoElemento = new Dispositivo();
+            novoElemento->Id = numeroItag;
+            novoElemento->Rssis = LinkedList<int>();            
+            novoElemento->Rssis.add(dispositivo.getRSSI());
           dispositivos.add(novoElemento);
         }
         
@@ -110,14 +108,36 @@ void atualizarLista(BLEScanResults dispositivosEncontrados)
 
 void definirValores() {
   for(int i = 0; i < dispositivos.size(); i++) {
-    Dispositivo dispositivo = dispositivos.get(i);
-    //dispositivo.Moda = definirModa(); // TODO
-    dispositivo.Distancia = definirDistancia1(dispositivo.Moda);
+    Dispositivo *dispositivo = dispositivos.get(i);
+    dispositivo->Moda = definirModa(dispositivo);
+    dispositivo->Distancia = definirDistancia(dispositivo->Moda);
     dispositivos.set(i, dispositivo);
   }
 }
 
-float definirDistancia1(int rssi) {
+int definirModa(Dispositivo *dispositivo) {
+  dispositivo->Rssis.sort(funcaoCompara);  
+  int ultimoValor = 0, maiorValor = 0, somaAtual = 0, maiorSoma = 0;
+  int qtde = dispositivo->Rssis.size();
+
+  for(int j = 0; j < qtde ; j++) {
+    int valor = dispositivo->Rssis.get(j);      
+    somaAtual = valor == ultimoValor ? somaAtual + 1 : 1;
+    if (somaAtual > maiorSoma) {
+      maiorSoma = somaAtual;
+      maiorValor = valor;
+    }
+    ultimoValor = valor;
+  }
+
+  return maiorValor;
+}
+
+int funcaoCompara(int &a, int &b) {
+  return a > b;
+}
+
+float definirDistancia(int rssi) {
   float environmentalConstant = 0.12; // 2-4 range
   int oneMeterRssi = -56;
   float expoente = (oneMeterRssi - rssi) / 10.0 * environmentalConstant;
@@ -132,17 +152,17 @@ void imprimirResultado()
   }
 
   for(int i = 0; i < dispositivos.size(); i++) {
-    Dispositivo dispositivo = dispositivos.get(i);
+    Dispositivo *dispositivo = dispositivos.get(i);
     Serial.println(" --- ");
-    Serial.println(" iTag: " + (String)dispositivo.Id);
-    /*Serial.print(" Qtde: (" + (String)dispositivo.Rssis.size() + ") ");
+    Serial.println(" iTag: " + (String)dispositivo->Id);
+    Serial.print(" RSSI: (" + (String)dispositivo->Rssis.size() + ") ");
 
-    int qtde = dispositivo.Rssis.size();
+    int qtde = dispositivo->Rssis.size();
     for(int j = 0; j < (qtde - 1); j++)     
-      Serial.print((String)dispositivo.Rssis.get(j) + ",");
-    Serial.println((String)dispositivo.Rssis.get(qtde - 1));*/
+      Serial.print((String)dispositivo->Rssis.get(j) + ",");
+    Serial.println((String)dispositivo->Rssis.get(qtde - 1));
     
-    Serial.println(" Moda: " + (String)dispositivo.Moda);
-    Serial.println(" Dist: " + (String)dispositivo.Distancia);
+    Serial.println(" Moda: " + (String)dispositivo->Moda);
+    Serial.println(" Dist: " + (String)dispositivo->Distancia);
   }
 }

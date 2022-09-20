@@ -1,6 +1,3 @@
-// OS COMENTÁRIOS RESERVAM UMA SOLUÇÃO PARA OBTER RSSIS E CALCULAR A MODA,
-// NO ENTANTO ESTOU TENDO ERRO DE ESTOURO DE PILHA DE MEMÓRIA
-
 #include <BLEDevice.h>
 #include <LinkedList.h>
 
@@ -9,16 +6,18 @@
 #define QUANTIDADE_MODA 5
 #define SEGUNDOS_SCANNER 1
 #define TEMPO_PAUSA 10000
+#define METRAGEM_QUADRADO 6
 
 int totalScan;
 BLEScan* scanner;
-struct Dispositivo {
-  int Id;
-  //LinkedList<int> Rssis;
-  int Moda;
-  float Distancia;
+class Dispositivo {
+  public:
+    int Id;
+    LinkedList<int> Rssis;
+    int Moda;
+    float Distancia;
 };
-LinkedList<Dispositivo> dispositivos = LinkedList<Dispositivo>();
+LinkedList<Dispositivo*> dispositivos = LinkedList<Dispositivo*>();
 std::__cxx11::string iTags[QUANTIDADE_ITAGS] = {
   "fc:58:fa:b4:60:96",
   "fc:58:fa:b4:64:2b",
@@ -78,27 +77,27 @@ void atualizarLista(BLEScanResults dispositivosEncontrados)
         // DISPOSITIVO É UM ITAG
         
         int numeroItag = j + 1;
-        Dispositivo existente;
+        Dispositivo *existente;
         bool existe = false;
         
         for(int k = 0; k < dispositivos.size(); k++) {
           existente = dispositivos.get(k);
-          if (numeroItag == existente.Id) {
-            existe = true;
-            //LinkedList<int> listaAntiga = existente.Rssis;
-            //Dispositivo atualizaElemento = {numeroItag, listaAntiga};
-            Dispositivo atualizaElemento = {numeroItag, dispositivo.getRSSI()};
-            //atualizaElemento.Rssis.add(dispositivo.getRSSI());
+          if (numeroItag == existente->Id) {
+            existe = true;            
+            Dispositivo *atualizaElemento = new Dispositivo();
+              atualizaElemento->Id = numeroItag;       
+              atualizaElemento->Rssis = existente->Rssis;            
+              atualizaElemento->Rssis.add(dispositivo.getRSSI());            
             dispositivos.set(k, atualizaElemento);
             break;
           }
         }
         
         if (!existe) {
-          //LinkedList<int> novaLista = LinkedList<int>();
-          //Dispositivo novoElemento = {numeroItag, novaLista};
-          Dispositivo novoElemento = {numeroItag, dispositivo.getRSSI()};
-          //novoElemento.Rssis.add(dispositivo.getRSSI());
+          Dispositivo *novoElemento = new Dispositivo();
+            novoElemento->Id = numeroItag;
+            novoElemento->Rssis = LinkedList<int>();            
+            novoElemento->Rssis.add(dispositivo.getRSSI());
           dispositivos.add(novoElemento);
         }
         
@@ -110,14 +109,45 @@ void atualizarLista(BLEScanResults dispositivosEncontrados)
 
 void definirValores() {
   for(int i = 0; i < dispositivos.size(); i++) {
-    Dispositivo dispositivo = dispositivos.get(i);
-    //dispositivo.Moda = definirModa(); // TODO
-    dispositivo.Distancia = definirDistancia1(dispositivo.Moda);
+    Dispositivo *dispositivo = dispositivos.get(i);
+    dispositivo->Moda = definirModa(dispositivo);
+    dispositivo->Distancia = definirDistancia(dispositivo->Moda);    
+
+    // Simular distancia
+    if (dispositivo->Id == 1)
+      dispositivo->Distancia = 2.24;
+    else if (dispositivo->Id == 2)
+      dispositivo->Distancia = 4.12;
+    else if (dispositivo->Id == 3)
+      dispositivo->Distancia = 2.24;
+              
     dispositivos.set(i, dispositivo);
   }
 }
 
-float definirDistancia1(int rssi) {
+int definirModa(Dispositivo *dispositivo) {
+  dispositivo->Rssis.sort(funcaoCompara);  
+  int ultimoValor = 0, maiorValor = 0, somaAtual = 0, maiorSoma = 0;
+  int qtde = dispositivo->Rssis.size();
+
+  for(int j = 0; j < qtde ; j++) {
+    int valor = dispositivo->Rssis.get(j);      
+    somaAtual = valor == ultimoValor ? somaAtual + 1 : 1;
+    if (somaAtual > maiorSoma) {
+      maiorSoma = somaAtual;
+      maiorValor = valor;
+    }
+    ultimoValor = valor;
+  }
+
+  return maiorValor;
+}
+
+int funcaoCompara(int &a, int &b) {
+  return a > b;
+}
+
+float definirDistancia(int rssi) {
   float environmentalConstant = 0.12; // 2-4 range
   int oneMeterRssi = -56;
   float expoente = (oneMeterRssi - rssi) / 10.0 * environmentalConstant;
@@ -131,18 +161,36 @@ void imprimirResultado()
     return;
   }
 
-  for(int i = 0; i < dispositivos.size(); i++) {
-    Dispositivo dispositivo = dispositivos.get(i);
-    Serial.println(" --- ");
-    Serial.println(" iTag: " + (String)dispositivo.Id);
-    /*Serial.print(" Qtde: (" + (String)dispositivo.Rssis.size() + ") ");
+  float dist[3] = {0,0,0};
 
-    int qtde = dispositivo.Rssis.size();
-    for(int j = 0; j < (qtde - 1); j++)     
-      Serial.print((String)dispositivo.Rssis.get(j) + ",");
-    Serial.println((String)dispositivo.Rssis.get(qtde - 1));*/
+  for(int i = 0; i < dispositivos.size(); i++) {
+    Dispositivo *dispositivo = dispositivos.get(i);
     
-    Serial.println(" Moda: " + (String)dispositivo.Moda);
-    Serial.println(" Dist: " + (String)dispositivo.Distancia);
+    if (dispositivo->Id == 1)
+      dist[0] = dispositivo->Distancia;
+    else if (dispositivo->Id == 2)
+      dist[1] = dispositivo->Distancia;
+    else if (dispositivo->Id == 3)
+      dist[2] = dispositivo->Distancia;
+    
+    Serial.println(" --- ");
+    Serial.println(" iTag: " + (String)dispositivo->Id);
+    Serial.print(" RSSI: (" + (String)dispositivo->Rssis.size() + ") ");
+
+    int qtde = dispositivo->Rssis.size();
+    for(int j = 0; j < (qtde - 1); j++)     
+      Serial.print((String)dispositivo->Rssis.get(j) + ",");
+    Serial.println((String)dispositivo->Rssis.get(qtde - 1));
+    
+    Serial.println(" Moda: " + (String)dispositivo->Moda);
+    Serial.println(" Dist: " + (String)dispositivo->Distancia);
+  }
+
+  if (dist[0] != 0 && dist[1] != 0 && dist[2] != 0)
+  {
+    float metade = METRAGEM_QUADRADO / 2;
+    float x = ((pow(dist[0], 2)) - (pow(dist[1], 2)) + (pow(METRAGEM_QUADRADO, 2))) / (2.0 * METRAGEM_QUADRADO);    
+    float y = (((pow(dist[0], 2)) - (pow(dist[2], 2)) + (pow(metade, 2)) + (pow(metade, 2))) / (2.0 * metade)) - x;
+    Serial.println(" ------------ Cord: (" + (String)x + "," + (String)y + ")");
   }
 }
