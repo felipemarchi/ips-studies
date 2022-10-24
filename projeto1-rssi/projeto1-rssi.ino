@@ -2,7 +2,7 @@
 
 #define VISUALIZAR_DISPOSITIVOS false
 #define LED_AZUL_SCAN_ATIVO 2
-#define QUANTIDADE_ITAGS 5
+#define QUANTIDADE_ITAGS 6
 #define SEGUNDOS_SCANNER 1
 #define TOTAL_SCAN 100
 #define TEMPO_PAUSA 1000
@@ -11,7 +11,8 @@ int totalScan;
 BLEScan* scanner;
 int totalConjuntos = 0;
 std::__cxx11::string iTags[QUANTIDADE_ITAGS] = {
-    "fc:58:fa:b4:60:96",
+    "d8:b0:4c:b8:26:38", // Beacon
+    "fc:58:fa:b4:60:96", // iTags:
     "fc:58:fa:b4:64:2b",
     "fc:58:fa:b3:87:4f",
     "fc:58:fa:b7:5a:4a",
@@ -62,7 +63,7 @@ void realizarScan()
         {
             if(dispositivo.getAddress().toString() == iTags[j])
             {
-                int numeroItag = j + 1;
+                int numeroItag = j;
                 if (totalScan < 10)
                   Serial.println(" (" + (String)totalScan + ") " + (String)numeroItag + ": " + (String)dispositivo.getRSSI());
                 else if (totalScan < 100)

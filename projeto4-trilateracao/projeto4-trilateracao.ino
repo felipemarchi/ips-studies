@@ -111,16 +111,16 @@ void definirValores() {
   for(int i = 0; i < dispositivos.size(); i++) {
     Dispositivo *dispositivo = dispositivos.get(i);
     dispositivo->Moda = definirModa(dispositivo);
-    dispositivo->Distancia = definirDistancia(dispositivo->Moda);    
-
-    // Simular distancia
+    dispositivo->Distancia = definirDistancia(dispositivo->Moda);
+    
+    /*// Simular distancia
     if (dispositivo->Id == 1)
       dispositivo->Distancia = 2.24;
     else if (dispositivo->Id == 2)
       dispositivo->Distancia = 4.12;
     else if (dispositivo->Id == 3)
-      dispositivo->Distancia = 2.24;
-              
+      dispositivo->Distancia = 2.24;*/
+                   
     dispositivos.set(i, dispositivo);
   }
 }
@@ -166,24 +166,21 @@ void imprimirResultado()
   for(int i = 0; i < dispositivos.size(); i++) {
     Dispositivo *dispositivo = dispositivos.get(i);
     
+    Serial.println(" --- ");
+    Serial.println(" iTag: " + (String)dispositivo->Id);
+    Serial.print(" RSSI: (" + (String)dispositivo->Rssis.size() + ") ");
+    for(int j = 0; j < (dispositivo->Rssis.size() - 1); j++)     
+      Serial.print((String)dispositivo->Rssis.get(j) + ",");
+    Serial.println((String)dispositivo->Rssis.get(dispositivo->Rssis.size() - 1));    
+    Serial.println(" Moda: " + (String)dispositivo->Moda);
+    Serial.println(" Dist: " + (String)dispositivo->Distancia);
+    
     if (dispositivo->Id == 1)
       dist[0] = dispositivo->Distancia;
     else if (dispositivo->Id == 2)
       dist[1] = dispositivo->Distancia;
     else if (dispositivo->Id == 3)
       dist[2] = dispositivo->Distancia;
-    
-    Serial.println(" --- ");
-    Serial.println(" iTag: " + (String)dispositivo->Id);
-    Serial.print(" RSSI: (" + (String)dispositivo->Rssis.size() + ") ");
-
-    int qtde = dispositivo->Rssis.size();
-    for(int j = 0; j < (qtde - 1); j++)     
-      Serial.print((String)dispositivo->Rssis.get(j) + ",");
-    Serial.println((String)dispositivo->Rssis.get(qtde - 1));
-    
-    Serial.println(" Moda: " + (String)dispositivo->Moda);
-    Serial.println(" Dist: " + (String)dispositivo->Distancia);
   }
 
   if (dist[0] != 0 && dist[1] != 0 && dist[2] != 0)

@@ -2,7 +2,7 @@
 #include <LinkedList.h>
 
 #define LED_AZUL_SCAN_ATIVO 2
-#define QUANTIDADE_ITAGS 5
+#define QUANTIDADE_ITAGS 6
 #define QUANTIDADE_MODA 5
 #define SEGUNDOS_SCANNER 1
 #define TEMPO_PAUSA 10000
@@ -22,7 +22,8 @@ std::__cxx11::string iTags[QUANTIDADE_ITAGS] = {
   "fc:58:fa:b4:64:2b",
   "fc:58:fa:b3:87:4f",
   "fc:58:fa:b7:5a:4a",
-  "fc:58:fa:b3:8b:94"
+  "fc:58:fa:b3:8b:94",
+  "d8:b0:4c:b8:26:38"
 };
 
 void setup()
@@ -138,8 +139,8 @@ int funcaoCompara(int &a, int &b) {
 }
 
 float definirDistancia(int rssi) {
-  float environmentalConstant = 0.12; // 2-4 range
-  int oneMeterRssi = -56;
+  float environmentalConstant = 0.4; // 2-4 range
+  int oneMeterRssi = -77;
   float expoente = (oneMeterRssi - rssi) / 10.0 * environmentalConstant;
   return pow(10, expoente);
 }
